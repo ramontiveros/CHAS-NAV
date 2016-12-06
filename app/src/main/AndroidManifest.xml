@@ -30,7 +30,7 @@
             android:name=".LoginActivity"
             android:label="@string/title_activity_login" />
         <activity android:name=".AuthenticatedActivity" />
-        <activity android:name=".CameraActivity"></activity>
+        <activity android:screenOrientation="landscape" android:name=".CameraActivity"></activity>
     </application>
 
 </manifest>

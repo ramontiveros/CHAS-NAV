@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -48,6 +49,7 @@ public class CameraActivity extends AuthenticatedActivity {
     protected void onCreate(Bundle savedInstanceState) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         setContentView(R.layout.activity_camera);
 
