@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "841229532620",
+    "firebase_url": "https://chas-itesm.firebaseio.com",
+    "project_id": "chas-itesm",
+    "storage_bucket": "chas-itesm.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841229532620:android:4646bca86494cd22",
+        "android_client_info": {
+          "package_name": "mx.itesm.chas.chas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "841229532620-t5hs9c8kmt1gd2pmumj45b66hb4p6mdk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9dVJxf5YERvS2IhGu2J5EqzhNMJN2aCk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

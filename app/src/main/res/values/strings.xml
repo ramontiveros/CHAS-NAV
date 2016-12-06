@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">CHAS</string>
+    <string name="video_name">Escoge un video</string>
+    <string name="button_pick">Galeria</string>
+    <string name="title_text">Título</string>
+    <string name="button_upload">Subir</string>
+    <string name="date_hint">Especifica la fecha</string>
+    <string name="title_activity_login">Iniciar Sesión</string>
+    <string name="hint_email">Correo</string>
+    <string name="hint_password">Constraseña</string>
+
+
+    <!-- Strings related to login -->
+    <string name="auth_failed">Error al iniciar sesión</string>
+    <string name="loading">Iniciando Sesión…</string>
+    <string name="emailpassword_status_fmt">Email User: %s</string>
+
+    <!-- Menu strings -->
+    <string name="logout">Cerrar Sesión</string>
+    <string name="manual_upload">Subir Video</string>
+    <string name="take_video">Grabar Video</string>
+
+    <!-- Video record strings -->
+    <string name="record_video">Grabar</string>
+    <string name="video_record_description">Info.</string>
+    <string name="stop">Stop</string>>
+    <string name="permission_request">Se necesita permiso para grabar video y audio.</string>
+    <string name="camera_error">Este dispositivo no soporta esta función.</string>
+    <string name="intro_message">Listo para grabar.</string>
+</resources>
