@@ -1,29 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal">
+    android:keepScreenOn="true"
+    android:layout_height="match_parent">
 
     <TextureView
         android:id="@+id/texture"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <FrameLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"/>
+        android:layout_gravity="left|top"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/videoRecordingIndicator"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:maxHeight="8dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_fiber_manual_record_white_48dp"/>
+
+            <TextView
+                android:id="@+id/videoDurationIndicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@android:color/white"
+                android:text=""/>
+
+
+        </LinearLayout>
+
+    </FrameLayout>
 
     <FrameLayout
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:background="#3F51B5">
-
-        <Button
-            android:id="@+id/video"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/record_video" />
+        android:layout_gravity="right">
 
         <ImageButton
-            android:id="@+id/info"
+            android:id="@+id/videoRecordButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_fiber_manual_record_white_48dp"
+            style="@android:style/Widget.Material.Light.Button.Borderless"
+            android:contentDescription="@string/record_video" />
+
+        <ImageButton
+            android:id="@+id/videoInfoButton"
             android:contentDescription="@string/video_record_description"
             style="@android:style/Widget.Material.Light.Button.Borderless"
             android:layout_width="wrap_content"
@@ -34,4 +67,20 @@
 
     </FrameLayout>
 
-</LinearLayout>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom">
+
+        <ProgressBar
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:id="@+id/camera2ProgressBar"
+            android:layout_width="match_parent"
+            android:progressBackgroundTint="@android:color/transparent"
+            android:progressTint="@color/colorPrimary"
+            android:progressDrawable="@drawable/progress_drawable_blue"
+            android:layout_height="8dp" />
+
+    </FrameLayout>
+
+</android.support.design.widget.CoordinatorLayout>

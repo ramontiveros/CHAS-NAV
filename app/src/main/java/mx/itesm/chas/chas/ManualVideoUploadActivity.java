@@ -107,32 +107,6 @@ public class ManualVideoUploadActivity extends AuthenticatedActivity implements 
     public void onDismiss(final DialogInterface dialog) {
         if(pickedDate != null) {
             EditText dateText = (EditText)findViewById(R.id.dates);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             dateText.setText(pickedDate);
         }
     }

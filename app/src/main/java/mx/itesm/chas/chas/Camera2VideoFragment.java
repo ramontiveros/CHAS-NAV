@@ -25,10 +25,17 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
@@ -40,12 +47,32 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -83,6 +110,45 @@ public class Camera2VideoFragment extends Fragment
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
+    Toast videoUploadStartToast, videoUploadedToast, videoFailToast;
+
+    FirebaseStorage storage = FirebaseStorage.getInstance();
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    UploadTask videoUploadTask;
+
+    Animation blinkAnimation = new AlphaAnimation(1, 0);
+
+    private ProgressBar uploadProgessBar;
+
+    private ImageView recordingIndicator;
+
+    private TextView videoDurationIndicator;
+
+    private long videoTime = SystemClock.uptimeMillis();
+
+    private Handler videoTimeHandler = new Handler();
+
+    private Runnable updateVideoTime = new Runnable() {
+        public void run() {
+            final long start = videoTime;
+            long millis = SystemClock.uptimeMillis() - start;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds     = seconds % 60;
+
+            if (seconds < 10) {
+                videoDurationIndicator.setText("" + minutes + ":0" + seconds);
+            } else {
+                videoDurationIndicator.setText("" + minutes + ":" + seconds);
+            }
+
+            videoTimeHandler.postAtTime(this,
+                    start + (((minutes * 60) + seconds + 1) * 1000));
+        }
+    };
+
+    final String DIRECTORY_NAME = "CHAS";
+
     /**
      * An TextureView for camera preview.
      */
@@ -91,10 +157,10 @@ public class Camera2VideoFragment extends Fragment
     /**
      * Button to record video
      */
-    private Button mButtonVideo;
+    private ImageButton mButtonVideo;
 
     /**
-     * A refernce to the opened {@link android.hardware.camera2.CameraDevice}.
+     * A reference to the opened {@link android.hardware.camera2.CameraDevice}.
      */
     private CameraDevice mCameraDevice;
 
@@ -269,10 +335,20 @@ public class Camera2VideoFragment extends Fragment
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
+        try {
         mTextureView = (TextureView) view.findViewById(R.id.texture);
-        mButtonVideo = (Button) view.findViewById(R.id.video);
+        mButtonVideo = (ImageButton) view.findViewById(R.id.videoRecordButton);
         mButtonVideo.setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+        recordingIndicator = (ImageView) view.findViewById(R.id.videoRecordingIndicator);
+        videoDurationIndicator = (TextView) view.findViewById(R.id.videoDurationIndicator);
+        uploadProgessBar = (ProgressBar) view.findViewById(R.id.camera2ProgressBar);
+        view.findViewById(R.id.videoInfoButton).setOnClickListener(this);
+
+        recordingIndicator.setImageAlpha(0);
+        } catch(NullPointerException e) {
+            Log.d("NULLPOINTER", "Got a nullpointer again: " + e);
+
+        }
     }
 
     @Override
@@ -288,6 +364,7 @@ public class Camera2VideoFragment extends Fragment
 
     @Override
     public void onPause() {
+        if(mIsRecordingVideo) stopRecordingVideo();
         closeCamera();
         stopBackgroundThread();
         super.onPause();
@@ -296,7 +373,7 @@ public class Camera2VideoFragment extends Fragment
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.video: {
+            case R.id.videoRecordButton: {
                 if (mIsRecordingVideo) {
                     stopRecordingVideo();
                 } else {
@@ -304,11 +381,11 @@ public class Camera2VideoFragment extends Fragment
                 }
                 break;
             }
-            case R.id.info: {
+            case R.id.videoInfoButton: {
                 Activity activity = getActivity();
                 if (null != activity) {
                     new AlertDialog.Builder(activity)
-                            .setMessage(R.string.intro_message)
+                            .setMessage(R.string.video_info_help_text)
                             .setPositiveButton(android.R.string.ok, null)
                             .show();
                 }
@@ -564,15 +641,26 @@ public class Camera2VideoFragment extends Fragment
     }
 
     private void setUpMediaRecorder() throws IOException {
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), DIRECTORY_NAME);
         final Activity activity = getActivity();
         if (null == activity) {
             return;
         }
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                Log.d("MediaRecorder Setup", "failed to create directory");
+            }
+        }
+
+
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
-            mNextVideoAbsolutePath = getVideoFilePath(getActivity());
+            mNextVideoAbsolutePath = getVideoFilePath();
         }
         mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
         mMediaRecorder.setVideoEncodingBitRate(10000000);
@@ -592,8 +680,8 @@ public class Camera2VideoFragment extends Fragment
         mMediaRecorder.prepare();
     }
 
-    private String getVideoFilePath(Context context) {
-        return context.getExternalFilesDir(null).getAbsolutePath() + "/"
+    private String getVideoFilePath() {
+        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/" + DIRECTORY_NAME + "/"
                 + System.currentTimeMillis() + ".mp4";
     }
 
@@ -632,11 +720,23 @@ public class Camera2VideoFragment extends Fragment
                         @Override
                         public void run() {
                             // UI
-                            mButtonVideo.setText(R.string.stop);
+                            mButtonVideo.setImageResource(R.drawable.ic_stop_white_48dp);
                             mIsRecordingVideo = true;
 
                             // Start recording
                             mMediaRecorder.start();
+
+                            recordingIndicator.setImageAlpha(255);
+
+                            blinkAnimation.setDuration(500);
+                            blinkAnimation.setInterpolator(new AccelerateDecelerateInterpolator());
+                            blinkAnimation.setRepeatCount(Animation.INFINITE);
+                            blinkAnimation.setRepeatMode(Animation.REVERSE);
+                            recordingIndicator.startAnimation(blinkAnimation);
+
+                            videoTime = SystemClock.uptimeMillis();
+                            videoTimeHandler.removeCallbacks(updateVideoTime);
+                            videoTimeHandler.postDelayed(updateVideoTime, 100L);
                         }
                     });
                 }
@@ -649,9 +749,7 @@ public class Camera2VideoFragment extends Fragment
                     }
                 }
             }, mBackgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (CameraAccessException | IOException e) {
             e.printStackTrace();
         }
 
@@ -667,16 +765,25 @@ public class Camera2VideoFragment extends Fragment
     private void stopRecordingVideo() {
         // UI
         mIsRecordingVideo = false;
-        mButtonVideo.setText(R.string.record_video);
+        mButtonVideo.setImageResource(R.drawable.ic_fiber_manual_record_white_48dp);
         // Stop recording
         mMediaRecorder.stop();
         mMediaRecorder.reset();
 
+        blinkAnimation.cancel();
+        blinkAnimation.reset();
+
+        recordingIndicator.setImageAlpha(0);
+
+        videoTimeHandler.removeCallbacks(updateVideoTime);
+
+        videoDurationIndicator.setText("");
+
         Activity activity = getActivity();
         if (null != activity) {
-            Toast.makeText(activity, "Video saved: " + mNextVideoAbsolutePath,
-                    Toast.LENGTH_SHORT).show();
             Log.d(TAG, "Video saved: " + mNextVideoAbsolutePath);
+            uploadVideoToFirebase(mNextVideoAbsolutePath);
+            scanFile(mNextVideoAbsolutePath);
         }
         mNextVideoAbsolutePath = null;
         startPreview();
@@ -748,6 +855,65 @@ public class Camera2VideoFragment extends Fragment
                     .create();
         }
 
+    }
+
+    private void uploadVideoToFirebase(String videoPath) {
+        Calendar cal = Calendar.getInstance();
+        String title, date, key, duration;
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        Uri videoUri = Uri.fromFile(new File(videoPath));
+        long milisecondDuration;
+
+        videoUploadStartToast = Toast.makeText(getActivity().getApplicationContext(), "Subiendo Video.", Toast.LENGTH_LONG);
+        videoUploadedToast = Toast.makeText(getActivity().getApplicationContext(), "Video subido satisfactoriamente.", Toast.LENGTH_SHORT);
+        videoFailToast = Toast.makeText(getActivity().getApplicationContext(), "Error al subir video.", Toast.LENGTH_SHORT);
+
+        date = cal.get(Calendar.YEAR) + "-" + cal.get(Calendar.MONTH) + "-" + cal.get(Calendar.DAY_OF_MONTH);
+        title = "Video del " + date;
+        retriever.setDataSource(getActivity().getApplicationContext(), videoUri);
+        milisecondDuration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+        duration = String.format("%1$01d:%2$01d:%3$01d", milisecondDuration / 1000 / 60 / 60, milisecondDuration / 1000 / 60, milisecondDuration / 1000);
+        Video videoData = new Video(title, duration, date);
+
+        StorageReference storageRef = storage.getReferenceFromUrl("gs://chas-itesm.appspot.com/");
+        DatabaseReference databaseRef = database.getReference();
+        key = databaseRef.child("videos").push().getKey();
+        database.getReference().child("videos/" + key).setValue(videoData);
+        videoUploadTask = storageRef.child("videos/" + key + ".mp4").putFile(videoUri);
+
+        videoUploadStartToast.show();
+
+        videoUploadTask.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                videoFailToast.show();
+                uploadProgessBar.setProgress(0);
+            }
+        }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                videoUploadedToast.show();
+                uploadProgessBar.setProgress(0);
+            }
+        }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                uploadProgessBar.setProgress((int) progress);
+            }
+        });
+
+    }
+
+    private void scanFile(String path) {
+
+        MediaScannerConnection.scanFile(getActivity(),
+                new String[] { path }, null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    public void onScanCompleted(String path, Uri uri) {
+                        Log.i("TAG", "Finished scanning " + path);
+                    }
+                });
     }
 
 }

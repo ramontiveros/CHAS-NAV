@@ -26,5 +26,5 @@
     <string name="stop">Stop</string>>
     <string name="permission_request">Se necesita permiso para grabar video y audio.</string>
     <string name="camera_error">Este dispositivo no soporta esta función.</string>
-    <string name="intro_message">Listo para grabar.</string>
+    <string name="video_info_help_text">Graba videos para subir directamente a la nube. Cuando termines de grabar el video, éste se subirá por su cuenta.</string>
 </resources>
