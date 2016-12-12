@@ -8,12 +8,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import android.support.annotation.NonNull;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -31,9 +30,7 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 
 public class ManualVideoUploadActivity extends AuthenticatedActivity implements DialogInterface.OnDismissListener {
     public static String pickedDate = null;
@@ -41,7 +38,7 @@ public class ManualVideoUploadActivity extends AuthenticatedActivity implements 
     private Uri selectedVideo;
     private String selectedVideoPath;
     UploadTask videoUploadTask;
-    Toast incompleteFormToast, videoUploadedToast, videoFailToast;
+    Toast incompleteFormToast;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -52,9 +49,7 @@ public class ManualVideoUploadActivity extends AuthenticatedActivity implements 
 
         super.onCreate(savedInstanceState);
 
-        incompleteFormToast = Toast.makeText(getApplicationContext(), "Por favor llena todos los campos antes de subir un video.", Toast.LENGTH_LONG);
-        videoUploadedToast = Toast.makeText(getApplicationContext(), "Video subido satisfactoriamente.", Toast.LENGTH_SHORT);
-        videoFailToast = Toast.makeText(getApplicationContext(), "Error al subir video.", Toast.LENGTH_SHORT);
+        incompleteFormToast = Toast.makeText(getApplicationContext(), "Por favor llena los datos antes de subir el video.", Toast.LENGTH_LONG);
     }
 
     @Override
@@ -115,39 +110,31 @@ public class ManualVideoUploadActivity extends AuthenticatedActivity implements 
         if(selectedVideo != null) {
             final Button uploadButton = (Button)findViewById(R.id.video_upload_button);
             final ProgressBar progressBar = (ProgressBar)findViewById(R.id.video_upload_progressbar);
-            EditText videoTitle = (EditText)findViewById(R.id.title),
+            final EditText videoTitle = (EditText)findViewById(R.id.title),
                     videoDate = (EditText)findViewById(R.id.dates);
+            final TextView fileName = (TextView) findViewById(R.id.video_name);
             String title = videoTitle.getText().toString(),
-                    date = videoDate.getText().toString(),
-                    key,
-                    duration;
-            long milisecondDuration;
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            retriever.setDataSource(getApplicationContext(), selectedVideo);
-            milisecondDuration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
-            duration = String.format("%1$01d:%2$01d:%3$01d", milisecondDuration / 1000 / 60 / 60, milisecondDuration / 1000 / 60, milisecondDuration / 1000);
-            Video videoData = new Video(title, duration, date);
-            StorageReference storageRef = storage.getReferenceFromUrl("gs://chas-itesm.appspot.com/");
-            DatabaseReference databaseRef = database.getReference();
+                    date = videoDate.getText().toString();
+
             progressBar.setVisibility(View.VISIBLE);
             uploadButton.setEnabled(false);
-            key = databaseRef.child("videos").push().getKey();
-            System.out.println(key);
-            database.getReference().child("videos/" + key).setValue(videoData);
-            videoUploadTask = storageRef.child("videos/" + key + ".mp4").putFile(selectedVideo);
+
+            videoUploadTask = VideoUploader.uploadVideo(selectedVideo, title, date, getApplicationContext());
+
             videoUploadTask.addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
-                    videoFailToast.show();
                     uploadButton.setEnabled(true);
                     progressBar.setVisibility(View.INVISIBLE);
                 }
             }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    videoUploadedToast.show();
                     uploadButton.setEnabled(true);
                     progressBar.setVisibility(View.INVISIBLE);
+                    videoTitle.setText("");
+                    videoDate.setText("");
+                    fileName.setText("");
                 }
             }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                 @Override

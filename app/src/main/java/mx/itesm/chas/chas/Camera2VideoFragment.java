@@ -110,7 +110,6 @@ public class Camera2VideoFragment extends Fragment
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
-    Toast videoUploadStartToast, videoUploadedToast, videoFailToast;
 
     FirebaseStorage storage = FirebaseStorage.getInstance();
     FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -858,41 +857,18 @@ public class Camera2VideoFragment extends Fragment
     }
 
     private void uploadVideoToFirebase(String videoPath) {
-        Calendar cal = Calendar.getInstance();
-        String title, date, key, duration;
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         Uri videoUri = Uri.fromFile(new File(videoPath));
-        long milisecondDuration;
 
-        videoUploadStartToast = Toast.makeText(getActivity().getApplicationContext(), "Subiendo Video.", Toast.LENGTH_LONG);
-        videoUploadedToast = Toast.makeText(getActivity().getApplicationContext(), "Video subido satisfactoriamente.", Toast.LENGTH_SHORT);
-        videoFailToast = Toast.makeText(getActivity().getApplicationContext(), "Error al subir video.", Toast.LENGTH_SHORT);
-
-        date = cal.get(Calendar.YEAR) + "-" + cal.get(Calendar.MONTH) + "-" + cal.get(Calendar.DAY_OF_MONTH);
-        title = "Video del " + date;
-        retriever.setDataSource(getActivity().getApplicationContext(), videoUri);
-        milisecondDuration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
-        duration = String.format("%1$01d:%2$01d:%3$01d", milisecondDuration / 1000 / 60 / 60, milisecondDuration / 1000 / 60, milisecondDuration / 1000);
-        Video videoData = new Video(title, duration, date);
-
-        StorageReference storageRef = storage.getReferenceFromUrl("gs://chas-itesm.appspot.com/");
-        DatabaseReference databaseRef = database.getReference();
-        key = databaseRef.child("videos").push().getKey();
-        database.getReference().child("videos/" + key).setValue(videoData);
-        videoUploadTask = storageRef.child("videos/" + key + ".mp4").putFile(videoUri);
-
-        videoUploadStartToast.show();
+        videoUploadTask = VideoUploader.uploadVideo(videoUri, getActivity().getApplicationContext());
 
         videoUploadTask.addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
-                videoFailToast.show();
                 uploadProgessBar.setProgress(0);
             }
         }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                videoUploadedToast.show();
                 uploadProgessBar.setProgress(0);
             }
         }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
