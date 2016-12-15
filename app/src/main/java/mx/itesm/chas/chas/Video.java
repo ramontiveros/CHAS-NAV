@@ -5,15 +5,16 @@ package mx.itesm.chas.chas;
  */
 
 public class Video {
-    public String title, length, date;
+    public String title, length, date, matchId;
 
     public Video() {
 
     }
 
-    public Video(String title, String length, String date) {
+    public Video(String title, String length, String date, String matchId) {
         this.title = title;
         this.length = length;
         this.date = date;
+        this.matchId = matchId;
     }
 }

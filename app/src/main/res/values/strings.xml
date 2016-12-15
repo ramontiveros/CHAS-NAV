@@ -9,6 +9,13 @@
     <string name="hint_email">Correo</string>
     <string name="hint_password">Constraseña</string>
 
+    <!-- Team Drawer Strings -->
+    <string name="user_name">Manuel Coach</string>
+    <string name="user_email">manuel.coach@chas.mx</string>
+    <string name="navigation_drawer_open">Abrir menú</string>
+    <string name="navigation_drawer_close">Cerrar menú</string>
+    <string name="action_settings">Ayuda</string>
+    <string name="log_out">Cerrar Sesión</string>
 
     <!-- Strings related to login -->
     <string name="auth_failed">Error al iniciar sesión</string>
@@ -27,4 +34,7 @@
     <string name="permission_request">Se necesita permiso para grabar video y audio.</string>
     <string name="camera_error">Este dispositivo no soporta esta función.</string>
     <string name="video_info_help_text">Graba videos para subir directamente a la nube. Cuando termines de grabar el video, éste se subirá por su cuenta.</string>
+    <string name="title_activity_match_picker">Partidos</string>
+
+
 </resources>
