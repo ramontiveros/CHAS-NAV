@@ -56,7 +56,7 @@ public class VideoUploader {
             millisecondDuration = Long.parseLong(rawDuration);
             secondDuration = millisecondDuration / 1000;
             minuteDuration = millisecondDuration / 1000 / 60;
-            duration = String.format("%1$01d:%2$01d:%3$01d", millisecondDuration / 1000 / 60 / 60, minuteDuration < 10? "0" + minuteDuration:minuteDuration, secondDuration < 10? "0" + secondDuration:secondDuration);
+            duration = (millisecondDuration / 1000 / 60 / 60) + ":" + (minuteDuration < 10? "0" + minuteDuration:minuteDuration) + ":" + (secondDuration < 10? "0" + secondDuration:secondDuration);
         } else {
             duration = "0:00:00";
             Log.d("VideoUploader", "Failed to retrieve video duration");
