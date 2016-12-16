@@ -86,9 +86,7 @@ public class MatchListFragment extends ListFragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Set title
-        getActivity().getActionBar()
-                .setTitle("Partidos");
+        getActivity().setTitle("Partidos");
     }
 
 
